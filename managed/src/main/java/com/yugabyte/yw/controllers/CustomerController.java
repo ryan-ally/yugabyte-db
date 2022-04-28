@@ -477,7 +477,7 @@ public class CustomerController extends AuthenticatedController {
         }
         namespaces.add(
             PlacementInfoUtil.getKubernetesNamespace(
-                isMultiAZ, nodePrefix, az.code, az.getUnmaskedConfig()));
+                isMultiAZ, nodePrefix, az.code, az.getUnmaskedConfig(), true)); // TODO cluster type
       }
     }
 

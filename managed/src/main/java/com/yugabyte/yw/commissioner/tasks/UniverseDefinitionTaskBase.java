@@ -346,6 +346,7 @@ public abstract class UniverseDefinitionTaskBase extends UniverseTaskBase {
   // Set the universes' node prefix for universe creation op. And node names/indices of all the
   // being added nodes.
   public void setNodeNames(Universe universe) {
+    log.debug("ErrorGovardhan in setNodeNames");
     if (universe == null) {
       throw new IllegalArgumentException("Invalid universe to update node names.");
     }
@@ -392,6 +393,7 @@ public abstract class UniverseDefinitionTaskBase extends UniverseTaskBase {
                   node.cloudInfo.region,
                   node.cloudInfo.az);
           iter++;
+          log.info("Node name {}", node.nodeName);
         }
         node.isYsqlServer = isYSQL;
         node.isYqlServer = isYCQL;
@@ -520,6 +522,7 @@ public abstract class UniverseDefinitionTaskBase extends UniverseTaskBase {
    * @param pi : the placement info in which the masters need to be placed.
    */
   public void selectNumMastersAZ(PlacementInfo pi) {
+    log.debug("ErrorGovardhan select masters AZ: PI: {} ", pi);
     UserIntent userIntent = taskParams().getPrimaryCluster().userIntent;
     int numTotalMasters = userIntent.replicationFactor;
     PlacementInfoUtil.selectNumMastersAZ(pi, numTotalMasters);
@@ -692,6 +695,7 @@ public abstract class UniverseDefinitionTaskBase extends UniverseTaskBase {
    * @param nodes : a collection of nodes that need to be created
    */
   public SubTaskGroup createStartTServersTasks(Collection<NodeDetails> nodes) {
+    log.debug("ErrorGovardhan createTServer {}", nodes.size());
     SubTaskGroup subTaskGroup =
         getTaskExecutor().createSubTaskGroup("AnsibleClusterServerCtl", executor);
     for (NodeDetails node : nodes) {
@@ -737,6 +741,7 @@ public abstract class UniverseDefinitionTaskBase extends UniverseTaskBase {
    * Creates a task list to wait for a minimum number of tservers to heartbeat to the master leader.
    */
   public SubTaskGroup createWaitForTServerHeartBeatsTask() {
+    log.debug("ErrorGovardhan waitForTserverHeartBeatTask");
     SubTaskGroup subTaskGroup =
         getTaskExecutor().createSubTaskGroup("WaitForTServerHeartBeats", executor);
     WaitForTServerHeartBeats task = createTask(WaitForTServerHeartBeats.class);
@@ -1489,6 +1494,7 @@ public abstract class UniverseDefinitionTaskBase extends UniverseTaskBase {
       boolean isShellMode,
       boolean ignoreNodeStatus,
       boolean ignoreUseCustomImageConfig) {
+        log.debug("ErrorGovardhan createProv Node tasks node count: {}", nodesToBeProvisioned.size());
     boolean isFallThrough =
         createCreateNodeTasks(
             universe, nodesToBeProvisioned, ignoreNodeStatus, ignoreUseCustomImageConfig);

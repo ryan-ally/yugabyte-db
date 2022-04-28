@@ -202,7 +202,7 @@ public class EditKubernetesUniverse extends KubernetesTaskBase {
       }
 
       // Update the universe to the new state.
-      createSingleKubernetesExecutorTask(KubernetesCommandExecutor.CommandType.POD_INFO, newPI);
+      createSingleKubernetesExecutorTask(KubernetesCommandExecutor.CommandType.POD_INFO, newPI, false); // TODO
 
       // Update the swamper target file.
       createSwamperTargetUpdateTask(false /* removeFile */);
@@ -257,9 +257,10 @@ public class EditKubernetesUniverse extends KubernetesTaskBase {
             : PlacementInfoUtil.computeMasterAddresses(
                 newPI, newPlacement.masters, taskParams().nodePrefix, provider, masterRpcPort);
 
-    createPodsTask(newPlacement, masterAddresses, currPlacement, serverType, activeZones);
+    // TODO cluster type
+    createPodsTask(newPlacement, masterAddresses, currPlacement, serverType, activeZones, false);
 
-    createSingleKubernetesExecutorTask(KubernetesCommandExecutor.CommandType.POD_INFO, activeZones);
+    createSingleKubernetesExecutorTask(KubernetesCommandExecutor.CommandType.POD_INFO, activeZones, false); // TODO
 
     createWaitForServersTasks(podsToAdd, serverType)
         .setSubTaskGroupType(SubTaskGroupType.ConfigureUniverse);
@@ -291,7 +292,8 @@ public class EditKubernetesUniverse extends KubernetesTaskBase {
         ybSoftwareVersion,
         DEFAULT_WAIT_TIME_MS,
         masterChanged,
-        tserverChanged);
+        tserverChanged,
+        false); // TODO cluster type
   }
 
   /*
@@ -304,6 +306,7 @@ public class EditKubernetesUniverse extends KubernetesTaskBase {
             newPI, newPlacement.masters, taskParams().nodePrefix, provider, masterRpcPort);
 
     // Need to unify with DestroyKubernetesUniverse.
-    deletePodsTask(currPlacement, masterAddresses, newPlacement, userIntentChange);
+    // TODO determine cluster type
+    deletePodsTask(currPlacement, masterAddresses, newPlacement, userIntentChange, false);
   }
 }

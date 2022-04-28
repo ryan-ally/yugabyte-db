@@ -46,6 +46,7 @@ public class CreateKubernetesUniverse extends KubernetesTaskBase {
 
   @Override
   public void run() {
+    log.debug("ErrorGovardhan run method create k8s univ");
     try {
       // Verify the task params.
       verifyParams(UniverseOpType.CREATE);
@@ -88,9 +89,9 @@ public class CreateKubernetesUniverse extends KubernetesTaskBase {
 
       boolean isMultiAz = PlacementInfoUtil.isMultiAZ(provider);
 
-      createPodsTask(placement, masterAddresses);
+      createPodsTask(placement, masterAddresses, false);
 
-      createSingleKubernetesExecutorTask(KubernetesCommandExecutor.CommandType.POD_INFO, pi);
+      createSingleKubernetesExecutorTask(KubernetesCommandExecutor.CommandType.POD_INFO, pi, false);
 
       Set<NodeDetails> tserversAdded =
           getPodsToAdd(placement.tservers, null, ServerType.TSERVER, isMultiAz);

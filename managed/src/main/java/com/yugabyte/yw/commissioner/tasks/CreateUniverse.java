@@ -111,6 +111,7 @@ public class CreateUniverse extends UniverseDefinitionTaskBase {
               taskParams().expectedUniverseVersion,
               u -> {
                 if (isFirstTryForTask(taskParams())) {
+                  log.debug("ErrorGovardhan firstTry create universe");
                   // Fetch the task params from the DB to start from fresh on retry.
                   // Otherwise, some operations like name assignment can fail.
                   fetchTaskDetailsFromDB();
@@ -276,6 +277,7 @@ public class CreateUniverse extends UniverseDefinitionTaskBase {
         String errMsg = String.format("Node %s does not have placement.", node.nodeName);
         throw new RuntimeException(errMsg);
       }
+      log.debug("ErrorGovardhan validateNodeExistence nodeName: {}", node.nodeName);
       Cluster cluster = universe.getCluster(node.placementUuid);
       if (cluster.userIntent.providerType.equals(CloudType.onprem)) {
         continue;

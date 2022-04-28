@@ -180,7 +180,7 @@ public class NodeUniverseManager extends DevopsBase {
           PlacementInfoUtil.getKubernetesNamespace(
               universe.getUniverseDetails().nodePrefix,
               isMultiAz ? AvailabilityZone.getOrBadRequest(node.azUuid).name : null,
-              AvailabilityZone.get(node.azUuid).getUnmaskedConfig());
+              AvailabilityZone.get(node.azUuid).getUnmaskedConfig(), true); // TODO cluster type
       // TODO(bhavin192): this might need an updated when we have
       // multiple releases in one namespace.
       String kubeconfig =

@@ -144,7 +144,7 @@ public class UpgradeKubernetesUniverse extends KubernetesTaskBase {
       }
     }
 
-    createSingleKubernetesExecutorTask(CommandType.POD_INFO, pi);
+    createSingleKubernetesExecutorTask(CommandType.POD_INFO, pi, false); // TODO
 
     KubernetesPlacement placement = new KubernetesPlacement(pi);
 
@@ -171,7 +171,8 @@ public class UpgradeKubernetesUniverse extends KubernetesTaskBase {
           ybSoftwareVersion,
           taskParams().sleepAfterMasterRestartMillis,
           masterChanged,
-          tserverChanged);
+          tserverChanged,
+          false); // TODO determine cluster type
     }
     if (tserverChanged) {
       createLoadBalancerStateChangeTask(false /*enable*/)
@@ -186,7 +187,8 @@ public class UpgradeKubernetesUniverse extends KubernetesTaskBase {
           ybSoftwareVersion,
           taskParams().sleepAfterTServerRestartMillis,
           false /* master change is false since it has already been upgraded.*/,
-          tserverChanged);
+          tserverChanged,
+          false); // TODO determine cluster type
 
       createLoadBalancerStateChangeTask(true /*enable*/).setSubTaskGroupType(getTaskSubGroupType());
     }

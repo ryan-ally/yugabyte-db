@@ -152,7 +152,7 @@ public class MetaMasterController extends Controller {
 
         String namespace =
             PlacementInfoUtil.getKubernetesNamespace(
-                isMultiAz, universeDetails.nodePrefix, azName, config);
+                isMultiAz, universeDetails.nodePrefix, azName, config, true); // TODO cluster type
 
         String ip =
             kubernetesManagerFactory

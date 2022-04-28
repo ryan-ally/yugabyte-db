@@ -1673,16 +1673,16 @@ public class PlacementInfoUtilTest extends FakeDBApplication {
     String nodePrefix = "demo-universe";
     String nodePrefixAz = String.format("%s-%s", nodePrefix, az);
 
-    assertEquals(nodePrefix, PlacementInfoUtil.getKubernetesNamespace(nodePrefix, null, config));
-    assertEquals(nodePrefixAz, PlacementInfoUtil.getKubernetesNamespace(nodePrefix, az, config));
+    assertEquals(nodePrefix, PlacementInfoUtil.getKubernetesNamespace(nodePrefix, null, config, true)); // TODO cluster type
+    assertEquals(nodePrefixAz, PlacementInfoUtil.getKubernetesNamespace(nodePrefix, az, config, true)); // TODO cluster type
     assertEquals(
-        nodePrefixAz, PlacementInfoUtil.getKubernetesNamespace(true, nodePrefix, az, config));
+        nodePrefixAz, PlacementInfoUtil.getKubernetesNamespace(true, nodePrefix, az, config, true)); // TODO cluster type
     assertEquals(
-        nodePrefix, PlacementInfoUtil.getKubernetesNamespace(false, nodePrefix, az, config));
+        nodePrefix, PlacementInfoUtil.getKubernetesNamespace(false, nodePrefix, az, config, true)); // TODO cluster type
 
     config.put("KUBENAMESPACE", ns);
-    assertEquals(ns, PlacementInfoUtil.getKubernetesNamespace(true, nodePrefix, az, config));
-    assertEquals(ns, PlacementInfoUtil.getKubernetesNamespace(false, nodePrefix, az, config));
+    assertEquals(ns, PlacementInfoUtil.getKubernetesNamespace(true, nodePrefix, az, config, true)); // TODO cluster type
+    assertEquals(ns, PlacementInfoUtil.getKubernetesNamespace(false, nodePrefix, az, config, true)); // TODO cluster type
   }
 
   @Test

@@ -425,6 +425,7 @@ public abstract class UniverseTaskBase extends AbstractTaskBase {
    * @return
    */
   public Universe lockUniverseForUpdate(int expectedUniverseVersion, Consumer<Universe> callback) {
+    log.debug("ErrorGovardhan lockUniverseForUpdate {}", expectedUniverseVersion);
     UniverseUpdater updater =
         getLockingUniverseUpdater(expectedUniverseVersion, true, false, false, callback);
     return lockUniverseForUpdate(expectedUniverseVersion, updater);
@@ -866,6 +867,7 @@ public abstract class UniverseTaskBase extends AbstractTaskBase {
    */
   public SubTaskGroup createSetNodeStateTasks(
       Collection<NodeDetails> nodes, NodeDetails.NodeState nodeState) {
+        log.debug("ErrorGovardhan SetNodeState as live {}", nodes.size());
     SubTaskGroup subTaskGroup = getTaskExecutor().createSubTaskGroup("SetNodeState", executor);
     for (NodeDetails node : nodes) {
       SetNodeState.Params params = new SetNodeState.Params();
@@ -1390,6 +1392,7 @@ public abstract class UniverseTaskBase extends AbstractTaskBase {
    * @return The subtask group.
    */
   public SubTaskGroup createStartMasterTasks(Collection<NodeDetails> nodes) {
+    log.info("ErrorGovardhan createMasterTasks {}", nodes.size());
     SubTaskGroup subTaskGroup =
         getTaskExecutor().createSubTaskGroup("AnsibleClusterServerCtl", executor);
     for (NodeDetails node : nodes) {

@@ -185,7 +185,8 @@ public class DestroyKubernetesUniverse extends DestroyUniverse {
       // This assumes that the config is az config. It is true in this
       // particular case, all callers just pass az config.
       // params.namespace remains null if config is not passed.
-      params.namespace = PlacementInfoUtil.getKubernetesNamespace(nodePrefix, az, config);
+      // TODO determine cluster type
+      params.namespace = PlacementInfoUtil.getKubernetesNamespace(nodePrefix, az, config, false);
     }
     params.universeUUID = taskParams().universeUUID;
     KubernetesCommandExecutor task = createTask(KubernetesCommandExecutor.class);

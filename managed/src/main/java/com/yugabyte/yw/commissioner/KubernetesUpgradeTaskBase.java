@@ -97,7 +97,7 @@ public abstract class KubernetesUpgradeTaskBase extends KubernetesTaskBase {
       String softwareVersion,
       boolean isMasterChanged,
       boolean isTServerChanged) {
-    createSingleKubernetesExecutorTask(CommandType.POD_INFO, placementInfo);
+    createSingleKubernetesExecutorTask(CommandType.POD_INFO, placementInfo, false); // TODO
 
     KubernetesPlacement placement = new KubernetesPlacement(placementInfo);
     Provider provider =
@@ -122,7 +122,8 @@ public abstract class KubernetesUpgradeTaskBase extends KubernetesTaskBase {
           softwareVersion,
           taskParams().sleepAfterMasterRestartMillis,
           isMasterChanged,
-          isTServerChanged);
+          isTServerChanged,
+          false); // TODO cluster type
     }
 
     if (isTServerChanged) {
@@ -138,7 +139,8 @@ public abstract class KubernetesUpgradeTaskBase extends KubernetesTaskBase {
           softwareVersion,
           taskParams().sleepAfterTServerRestartMillis,
           false, // master change is false since it has already been upgraded.
-          isTServerChanged);
+          isTServerChanged,
+          false); // TODO cluster type
 
       createLoadBalancerStateChangeTask(true).setSubTaskGroupType(getTaskSubGroupType());
     }

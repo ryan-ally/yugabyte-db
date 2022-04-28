@@ -699,7 +699,7 @@ class UniverseForm extends Component {
       this.state.currentView === 'Primary' &&
       type !== 'Edit' &&
       type !== 'Async' &&
-      (selectedProvider === undefined || selectedProvider?.code !== 'kubernetes')
+      (selectedProvider === undefined)
     ) {
       asyncReplicaBtn = (
         <YBButton

@@ -2321,9 +2321,9 @@ public class PlacementInfoUtil {
   // of azName. In case of single AZ providers, the azName is passed
   // as null.
   public static String getKubernetesNamespace(
-      String nodePrefix, String azName, Map<String, String> azConfig) {
+      String nodePrefix, String azName, Map<String, String> azConfig, boolean isReadCluster) {
     boolean isMultiAZ = (azName != null);
-    return getKubernetesNamespace(isMultiAZ, nodePrefix, azName, azConfig);
+    return getKubernetesNamespace(isMultiAZ, nodePrefix, azName, azConfig, isReadCluster);
   }
 
   /**
@@ -2332,11 +2332,18 @@ public class PlacementInfoUtil {
    * azName params.
    */
   public static String getKubernetesNamespace(
-      boolean isMultiAZ, String nodePrefix, String azName, Map<String, String> azConfig) {
+      boolean isMultiAZ, String nodePrefix, String azName, Map<String, String> azConfig, boolean isReadCluster) {
     String namespace = azConfig.get("KUBENAMESPACE");
     if (StringUtils.isBlank(namespace)) {
       int suffixLen = isMultiAZ ? azName.length() + 1 : 0;
+      String readClusterSuffix = "-readcluster";
+      if(isReadCluster) {
+        suffixLen += readClusterSuffix.length();
+      }
       namespace = Util.sanitizeKubernetesNamespace(nodePrefix, suffixLen);
+      if(isReadCluster) {
+        namespace = String.format("%s-%s", namespace, readClusterSuffix);
+      }
       if (isMultiAZ) {
         namespace = String.format("%s-%s", namespace, azName);
       }
@@ -2362,7 +2369,7 @@ public class PlacementInfoUtil {
       }
 
       String azName = AvailabilityZone.get(entry.getKey()).code;
-      String namespace = getKubernetesNamespace(isMultiAZ, nodePrefix, azName, entry.getValue());
+      String namespace = getKubernetesNamespace(isMultiAZ, nodePrefix, azName, entry.getValue(), true); // TODO cluster type
       namespaceToConfig.put(namespace, kubeconfig);
       if (!isMultiAZ) {
         break;
@@ -2379,6 +2386,7 @@ public class PlacementInfoUtil {
       String nodePrefix,
       Provider provider,
       int masterRpcPort) {
+        LOG.info("ErrorGovardhan compute master addrs");
     List<String> masters = new ArrayList<>();
     Map<UUID, String> azToDomain = getDomainPerAZ(pi);
     boolean isMultiAZ = isMultiAZ(provider);
@@ -2389,7 +2397,7 @@ public class PlacementInfoUtil {
     for (Entry<UUID, Integer> entry : azToNumMasters.entrySet()) {
       AvailabilityZone az = AvailabilityZone.get(entry.getKey());
       String namespace =
-          getKubernetesNamespace(isMultiAZ, nodePrefix, az.code, az.getUnmaskedConfig());
+          getKubernetesNamespace(isMultiAZ, nodePrefix, az.code, az.getUnmaskedConfig(), true); // TODO cluster type
       String domain = azToDomain.get(entry.getKey());
       for (int idx = 0; idx < entry.getValue(); idx++) {
         // TODO(bhavin192): might need to change when we have multiple
