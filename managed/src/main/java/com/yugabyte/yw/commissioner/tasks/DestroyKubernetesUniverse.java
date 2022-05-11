@@ -16,10 +16,14 @@ import com.yugabyte.yw.commissioner.UserTaskDetails;
 import com.yugabyte.yw.commissioner.tasks.subtasks.KubernetesCommandExecutor;
 import com.yugabyte.yw.common.PlacementInfoUtil;
 import com.yugabyte.yw.forms.UniverseDefinitionTaskParams;
+import com.yugabyte.yw.forms.UniverseDefinitionTaskParams.Cluster;
 import com.yugabyte.yw.models.AvailabilityZone;
 import com.yugabyte.yw.models.Provider;
 import com.yugabyte.yw.models.Universe;
 import com.yugabyte.yw.models.helpers.PlacementInfo;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
@@ -60,8 +64,10 @@ public class DestroyKubernetesUniverse extends DestroyUniverse {
 
       Provider provider = Provider.get(UUID.fromString(userIntent.provider));
 
-      Map<UUID, Map<String, String>> azToConfig = PlacementInfoUtil.getConfigPerAZ(pi);
-      boolean isMultiAz = PlacementInfoUtil.isMultiAZ(provider);
+      List<Map<UUID, Map<String, String>>> azToConfigList = new ArrayList<>();
+      azToConfigList.add(PlacementInfoUtil.getConfigPerAZ(pi));
+
+      boolean isMultiAz = true; // TODO Govardhan PlacementInfoUtil.isMultiAZ(provider);
 
       // Cleanup the kms_history table
       createDestroyEncryptionAtRestTask()
@@ -90,54 +96,73 @@ public class DestroyKubernetesUniverse extends DestroyUniverse {
                   executor);
       namespaceDeletes.setSubTaskGroupType(UserTaskDetails.SubTaskGroupType.RemovingUnusedServers);
 
-      for (Entry<UUID, Map<String, String>> entry : azToConfig.entrySet()) {
-        UUID azUUID = entry.getKey();
-        String azName = isMultiAz ? AvailabilityZone.get(azUUID).code : null;
-
-        Map<String, String> config = entry.getValue();
-
-        String namespace = config.get("KUBENAMESPACE");
-
-        if (runHelmDelete || namespace != null) {
-          // Delete the helm deployments.
-          helmDeletes.addSubTask(
-              createDestroyKubernetesTask(
-                  universe.getUniverseDetails().nodePrefix,
-                  azName,
-                  config,
-                  KubernetesCommandExecutor.CommandType.HELM_DELETE,
-                  providerUUID));
+      List<Cluster> readClusterList = universe.getUniverseDetails().getReadOnlyClusters();
+      if(readClusterList.size()>0) {
+        if(readClusterList.size()!=1) {
+          String msg = "Expected at most 1 read cluster but found " + readClusterList.size();
+          log.error(msg);
+          throw new RuntimeException(msg);
         }
+        Cluster readCluster = readClusterList.get(0);
+        UniverseDefinitionTaskParams.UserIntent rrUserIntent = readCluster.userIntent;
+        PlacementInfo rrPI = readCluster.placementInfo;
+        Provider rrProvider = Provider.get(UUID.fromString(rrUserIntent.provider));
+        azToConfigList.add(PlacementInfoUtil.getConfigPerAZ(rrPI));
+      }
+      for(int i=0; i<azToConfigList.size(); i++) {
+        Map<UUID, Map<String, String>> azToConfig = azToConfigList.get(i);
+        for (Entry<UUID, Map<String, String>> entry : azToConfig.entrySet()) {
+          UUID azUUID = entry.getKey();
+          String azName = isMultiAz ? AvailabilityZone.get(azUUID).code : null;
 
-        // Delete the PVCs created for this AZ.
-        volumeDeletes.addSubTask(
-            createDestroyKubernetesTask(
-                universe.getUniverseDetails().nodePrefix,
-                azName,
-                config,
-                KubernetesCommandExecutor.CommandType.VOLUME_DELETE,
-                providerUUID));
+          Map<String, String> config = entry.getValue();
 
-        // TODO(bhavin192): delete the pull secret as well? As of now,
-        // we depend on the fact that, deleting the namespace will
-        // delete the pull secret. That won't be the case with
-        // providers which have KUBENAMESPACE paramter in the AZ
-        // config. How to find the pull secret name? Should we delete
-        // it when we have multiple releases in one namespace?. It is
-        // possible that same provider is creating multiple releases
-        // in one namespace. Tracked here:
-        // https://github.com/yugabyte/yugabyte-db/issues/7012
+          String namespace = config.get("KUBENAMESPACE");
 
-        // Delete the namespaces of the deployments only if those were
-        // created by us.
-        if (namespace == null) {
-          namespaceDeletes.addSubTask(
+          if (runHelmDelete || namespace != null) {
+            // Delete the helm deployments.
+            helmDeletes.addSubTask(
+                createDestroyKubernetesTask(
+                    universe.getUniverseDetails().nodePrefix,
+                    azName,
+                    config,
+                    KubernetesCommandExecutor.CommandType.HELM_DELETE,
+                    providerUUID,
+                    /*isReadOnlyCluster*/i!=0)); //i==0 is primary cluster
+          }
+
+          // Delete the PVCs created for this AZ.
+          volumeDeletes.addSubTask(
               createDestroyKubernetesTask(
                   universe.getUniverseDetails().nodePrefix,
                   azName,
                   config,
-                  KubernetesCommandExecutor.CommandType.NAMESPACE_DELETE,
-                  providerUUID));
+                  KubernetesCommandExecutor.CommandType.VOLUME_DELETE,
+                  providerUUID,
+                  /*isReadOnlyCluster*/i!=0)); //i==0 is primary cluster
+
+          // TODO(bhavin192): delete the pull secret as well? As of now,
+          // we depend on the fact that, deleting the namespace will
+          // delete the pull secret. That won't be the case with
+          // providers which have KUBENAMESPACE paramter in the AZ
+          // config. How to find the pull secret name? Should we delete
+          // it when we have multiple releases in one namespace?. It is
+          // possible that same provider is creating multiple releases
+          // in one namespace. Tracked here:
+          // https://github.com/yugabyte/yugabyte-db/issues/7012
+
+          // Delete the namespaces of the deployments only if those were
+          // created by us.
+          if (namespace == null) {
+            namespaceDeletes.addSubTask(
+                createDestroyKubernetesTask(
+                    universe.getUniverseDetails().nodePrefix,
+                    azName,
+                    config,
+                    KubernetesCommandExecutor.CommandType.NAMESPACE_DELETE,
+                    providerUUID,
+                    /*isReadOnlyCluster*/i!=0)); //i==0 is primary cluster
+          }
         }
       }
 
@@ -172,11 +197,13 @@ public class DestroyKubernetesUniverse extends DestroyUniverse {
       String az,
       Map<String, String> config,
       KubernetesCommandExecutor.CommandType commandType,
-      UUID providerUUID) {
+      UUID providerUUID,
+      boolean isReadOnlyCluster) {
     KubernetesCommandExecutor.Params params = new KubernetesCommandExecutor.Params();
     params.commandType = commandType;
     params.nodePrefix = nodePrefix;
     params.providerUUID = providerUUID;
+    params.isReadOnlyCluster = isReadOnlyCluster;
     if (az != null) {
       params.nodePrefix = String.format("%s-%s", nodePrefix, az);
     }
@@ -186,7 +213,7 @@ public class DestroyKubernetesUniverse extends DestroyUniverse {
       // particular case, all callers just pass az config.
       // params.namespace remains null if config is not passed.
       // TODO determine cluster type
-      params.namespace = PlacementInfoUtil.getKubernetesNamespace(nodePrefix, az, config, false);
+      params.namespace = PlacementInfoUtil.getKubernetesNamespace(nodePrefix, az, config, isReadOnlyCluster);
     }
     params.universeUUID = taskParams().universeUUID;
     KubernetesCommandExecutor task = createTask(KubernetesCommandExecutor.class);

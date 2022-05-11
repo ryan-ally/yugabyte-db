@@ -514,7 +514,9 @@ public class Universe extends Model {
             .stream()
             .filter(n -> n.cloudInfo.private_ip != null)
             .collect(Collectors.toSet());
+    LOG.info("ErrorGovardhan getservers nodedetails size: {}", filteredNodeDetails.size());
     for (NodeDetails nodeDetails : filteredNodeDetails) {
+      LOG.info("ErrorGovardhan getservers nodeName: {}, Master: {}", nodeDetails.nodeName, nodeDetails.isMaster);
       switch (type) {
         case YQLSERVER:
           if (nodeDetails.isYqlServer && nodeDetails.isTserver) servers.add(nodeDetails);

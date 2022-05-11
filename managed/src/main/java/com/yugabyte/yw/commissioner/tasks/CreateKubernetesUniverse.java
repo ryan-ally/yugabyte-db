@@ -21,6 +21,8 @@ import com.yugabyte.yw.models.Universe;
 import com.yugabyte.yw.forms.UniverseDefinitionTaskParams.Cluster;
 import com.yugabyte.yw.models.helpers.NodeDetails;
 import com.yugabyte.yw.models.helpers.PlacementInfo;
+
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import javax.inject.Inject;
@@ -68,7 +70,7 @@ public class CreateKubernetesUniverse extends KubernetesTaskBase {
       setNodeNames(universe);
 
       PlacementInfo pi = taskParams().getPrimaryCluster().placementInfo;
-
+      
       selectNumMastersAZ(pi);
 
       // Update the user intent.
@@ -95,6 +97,27 @@ public class CreateKubernetesUniverse extends KubernetesTaskBase {
 
       Set<NodeDetails> tserversAdded =
           getPodsToAdd(placement.tservers, null, ServerType.TSERVER, isMultiAz);
+
+      // Check if we need to create read cluster pods also
+      List<Cluster> readClusters = taskParams().getReadOnlyClusters();
+      if(readClusters.size()>1) {
+        String msg = "Expected at most 1 read cluster but found " + readClusters.size();
+        log.error(msg);
+        throw new RuntimeException(msg);
+      } else if(readClusters.size()==1) {
+        PlacementInfo readClusterPI = readClusters.get(0).placementInfo;
+        // TODO intent is already written. Check if encryption is copied from Primary to Secondary
+        // writeUserIntentToUniverse(true);
+        Provider readOnlyClusterProvider =
+        Provider.get(UUID.fromString(readClusters.get(0).userIntent.provider));
+        KubernetesPlacement readClusterPlacement = new KubernetesPlacement(readClusterPI);
+        // Skip choosing masters for read cluster
+        boolean isReadClusterMultiAz = PlacementInfoUtil.isMultiAZ(readOnlyClusterProvider);
+        createPodsTask(readClusterPlacement, masterAddresses, true);
+        // TODO Null ptr exception
+        createSingleKubernetesExecutorTask(KubernetesCommandExecutor.CommandType.POD_INFO, readClusterPI, true);
+        tserversAdded.addAll(getPodsToAdd(readClusterPlacement.tservers, null, ServerType.TSERVER, isReadClusterMultiAz));
+      }
 
       // Wait for new tablet servers to be responsive.
       createWaitForServersTasks(tserversAdded, ServerType.TSERVER)

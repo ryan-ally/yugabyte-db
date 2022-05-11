@@ -259,6 +259,7 @@ public class CustomerTaskController extends AuthenticatedController {
       case CreateUniverse:
       case EditUniverse:
       case ReadOnlyClusterCreate:
+      case ReadOnlyKubernetesClusterCreate:
         UniverseDefinitionTaskParams params =
             Json.fromJson(oldTaskParams, UniverseDefinitionTaskParams.class);
         // Reset the error string.

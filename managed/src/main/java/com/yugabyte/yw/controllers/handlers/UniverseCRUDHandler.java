@@ -20,6 +20,7 @@ import com.yugabyte.yw.commissioner.Commissioner;
 import com.yugabyte.yw.commissioner.Common;
 import com.yugabyte.yw.commissioner.tasks.DestroyUniverse;
 import com.yugabyte.yw.commissioner.tasks.ReadOnlyClusterDelete;
+import com.yugabyte.yw.commissioner.tasks.ReadOnlyKubernetesClusterDelete;
 import com.yugabyte.yw.common.KubernetesManagerFactory;
 import com.yugabyte.yw.common.PlacementInfoUtil;
 import com.yugabyte.yw.common.PlatformServiceException;
@@ -802,15 +803,27 @@ public class UniverseCRUDHandler {
       throw new PlatformServiceException(BAD_REQUEST, errMsg);
     }
 
+    UUID taskUUID;
     // Create the Commissioner task to destroy the universe.
-    ReadOnlyClusterDelete.Params taskParams = new ReadOnlyClusterDelete.Params();
-    taskParams.universeUUID = universe.universeUUID;
-    taskParams.clusterUUID = clusterUUID;
-    taskParams.isForceDelete = isForceDelete;
-    taskParams.expectedUniverseVersion = universe.version;
+    if (cluster.userIntent.providerType.equals(Common.CloudType.kubernetes)) {
+      ReadOnlyKubernetesClusterDelete.Params taskParams = new ReadOnlyKubernetesClusterDelete.Params();
+      taskParams.universeUUID = universe.universeUUID;
+      taskParams.clusterUUID = clusterUUID;
+      taskParams.isForceDelete = isForceDelete;
+      taskParams.expectedUniverseVersion = universe.version;
+      taskUUID = commissioner.submit(TaskType.ReadOnlyKubernetesClusterDelete, taskParams);
+    } else {
+      // Create the Commissioner task to destroy the universe.
+      ReadOnlyClusterDelete.Params taskParams = new ReadOnlyClusterDelete.Params();
+      taskParams.universeUUID = universe.universeUUID;
+      taskParams.clusterUUID = clusterUUID;
+      taskParams.isForceDelete = isForceDelete;
+      taskParams.expectedUniverseVersion = universe.version;
+      taskUUID = commissioner.submit(TaskType.ReadOnlyClusterDelete, taskParams);
+    }
 
     // Submit the task to delete the cluster.
-    UUID taskUUID = commissioner.submit(TaskType.ReadOnlyClusterDelete, taskParams);
+    
     LOG.info(
         "Submitted delete cluster for {} in {}, task uuid = {}.",
         clusterUUID,

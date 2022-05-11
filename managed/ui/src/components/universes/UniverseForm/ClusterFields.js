@@ -1604,9 +1604,6 @@ export default class ClusterFields extends Component {
     // Populate the cloud provider list
     if (isNonEmptyArray(cloud.providers.data)) {
       universeProviderList = cloud.providers.data.reduce((providerOption, providerItem) => {
-        if (this.props.type === 'Async' && providerItem.code === 'kubernetes') {
-          return providerOption;
-        }
         if (providerItem.uuid === currentProviderUUID) {
           currentProviderCode = providerItem.code;
         }

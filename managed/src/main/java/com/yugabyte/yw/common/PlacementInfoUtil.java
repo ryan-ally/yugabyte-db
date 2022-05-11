@@ -358,6 +358,7 @@ public class PlacementInfoUtil {
     Set<String> nodeNames = new HashSet<>();
 
     for (NodeDetails node : nodes) {
+      LOG.info("Node name: {}", node.nodeName);
       if (nodeNames.contains(node.nodeName)) {
         LOG.error("Duplicate nodeName {}.", node.nodeName);
         foundDups = true;
@@ -2254,6 +2255,8 @@ public class PlacementInfoUtil {
 
   // Check if there are multiple zones for deployment in the provider config.
   public static boolean isMultiAZ(Provider provider) {
+    return true;
+    /* TODO GOVARDHAN
     List<Region> regionList = Region.getByProvider(provider.uuid);
     if (regionList.size() > 1) {
       return true;
@@ -2267,6 +2270,7 @@ public class PlacementInfoUtil {
     List<AvailabilityZone> azList = AvailabilityZone.getAZsForRegion(region.uuid);
 
     return azList.size() > 1;
+    */
   }
 
   // Get the zones with the number of masters for each zone.
@@ -2336,7 +2340,7 @@ public class PlacementInfoUtil {
     String namespace = azConfig.get("KUBENAMESPACE");
     if (StringUtils.isBlank(namespace)) {
       int suffixLen = isMultiAZ ? azName.length() + 1 : 0;
-      String readClusterSuffix = "-readcluster";
+      String readClusterSuffix = "readcluster";
       if(isReadCluster) {
         suffixLen += readClusterSuffix.length();
       }
@@ -2361,7 +2365,9 @@ public class PlacementInfoUtil {
       PlacementInfo pi, String nodePrefix, Provider provider) {
     Map<String, String> namespaceToConfig = new HashMap<>();
     Map<UUID, Map<String, String>> azToConfig = getConfigPerAZ(pi);
-    boolean isMultiAZ = isMultiAZ(provider);
+    //boolean isMultiAZ = isMultiAZ(provider);
+    // TODO GOVARDHAN
+    boolean isMultiAZ = true;
     for (Entry<UUID, Map<String, String>> entry : azToConfig.entrySet()) {
       String kubeconfig = entry.getValue().get("KUBECONFIG");
       if (kubeconfig == null) {
@@ -2389,15 +2395,17 @@ public class PlacementInfoUtil {
         LOG.info("ErrorGovardhan compute master addrs");
     List<String> masters = new ArrayList<>();
     Map<UUID, String> azToDomain = getDomainPerAZ(pi);
-    boolean isMultiAZ = isMultiAZ(provider);
-    if (!isMultiAZ) {
-      return null;
-    }
+    // boolean isMultiAZ = isMultiAZ(provider);
+    // if (!isMultiAZ) {
+    //   return null;
+    // }
+    //TODO GOVARDHAN override
+    boolean isMultiAZ = true;
 
     for (Entry<UUID, Integer> entry : azToNumMasters.entrySet()) {
       AvailabilityZone az = AvailabilityZone.get(entry.getKey());
       String namespace =
-          getKubernetesNamespace(isMultiAZ, nodePrefix, az.code, az.getUnmaskedConfig(), true); // TODO cluster type
+          getKubernetesNamespace(isMultiAZ, nodePrefix, az.code, az.getUnmaskedConfig(), false); // TODO cluster type
       String domain = azToDomain.get(entry.getKey());
       for (int idx = 0; idx < entry.getValue(); idx++) {
         // TODO(bhavin192): might need to change when we have multiple

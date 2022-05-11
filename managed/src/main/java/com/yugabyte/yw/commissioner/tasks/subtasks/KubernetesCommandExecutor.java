@@ -180,6 +180,7 @@ public class KubernetesCommandExecutor extends UniverseTaskBase {
         break;
       case HELM_INSTALL:
         overridesFile = this.generateHelmOverride();
+        log.info("ErrorGovardhan values install file {}", overridesFile);
         kubernetesManagerFactory
             .getManager()
             .helmInstall(
@@ -192,6 +193,7 @@ public class KubernetesCommandExecutor extends UniverseTaskBase {
         break;
       case HELM_UPGRADE:
         overridesFile = this.generateHelmOverride();
+        log.info("ErrorGovardhan values upgrade file{}", overridesFile);
         kubernetesManagerFactory
             .getManager()
             .helmUpgrade(
@@ -212,6 +214,7 @@ public class KubernetesCommandExecutor extends UniverseTaskBase {
         }
         break;
       case HELM_DELETE:
+        log.info("ErrorGovardhan helm delete ns {}", taskParams().namespace);
         kubernetesManagerFactory
             .getManager()
             .helmDelete(config, taskParams().nodePrefix, taskParams().namespace);
@@ -271,7 +274,11 @@ public class KubernetesCommandExecutor extends UniverseTaskBase {
   private void processNodeInfo() {
     ObjectNode pods = Json.newObject();
     Universe u = Universe.getOrBadRequest(taskParams().universeUUID);
-    UUID placementUuid = u.getUniverseDetails().getPrimaryCluster().uuid;
+    UUID placementUuid;
+    if(taskParams().isReadOnlyCluster)
+      placementUuid = u.getUniverseDetails().getReadOnlyClusters().get(0).uuid;
+    else 
+      placementUuid = u.getUniverseDetails().getPrimaryCluster().uuid;
     PlacementInfo pi = taskParams().placementInfo;
 
     Map<UUID, Map<String, String>> azToConfig = PlacementInfoUtil.getConfigPerAZ(pi);
@@ -292,6 +299,7 @@ public class KubernetesCommandExecutor extends UniverseTaskBase {
           PlacementInfoUtil.getKubernetesNamespace(
               isMultiAz, taskParams().nodePrefix, azName, config, taskParams().isReadOnlyCluster);
 
+      log.info("ErrorGovardhan Pod infos");
       List<Pod> podInfos =
           kubernetesManagerFactory.getManager().getPodInfos(config, nodePrefix, namespace);
       for (Pod podInfo : podInfos) {
@@ -308,6 +316,7 @@ public class KubernetesCommandExecutor extends UniverseTaskBase {
                 ? String.format("%s_%s", podInfo.getSpec().getHostname(), azName)
                 : podInfo.getSpec().getHostname();
         String podNamespace = podInfo.getMetadata().getNamespace();
+        log.info("ErrorGovardhan pod name {} and fullname {}", podInfo.getMetadata().getName(), podName);
         if (StringUtils.isBlank(podNamespace)) {
           throw new IllegalArgumentException(
               "metadata.namespace of pod " + podName + " is empty. This shouldn't happen");
@@ -322,6 +331,11 @@ public class KubernetesCommandExecutor extends UniverseTaskBase {
         universe -> {
           UniverseDefinitionTaskParams universeDetails = universe.getUniverseDetails();
           Set<NodeDetails> defaultNodes = universeDetails.nodeDetailsSet;
+          log.info("ErrorGovardhan defaultNodes");
+          Iterator<NodeDetails> itr = defaultNodes.iterator();
+          while(itr.hasNext()) {
+            log.info("ErrorGovardhan nodedetails: {}", itr.next().getNodeName());
+          }
           NodeDetails defaultNode = defaultNodes.iterator().next();
           Set<NodeDetails> nodeDetailsSet = new HashSet<>();
           Iterator<Map.Entry<String, JsonNode>> iter = pods.fields();
@@ -356,8 +370,24 @@ public class KubernetesCommandExecutor extends UniverseTaskBase {
             nodeDetail.nodeName = hostname;
             nodeDetailsSet.add(nodeDetail);
           }
-          universeDetails.nodeDetailsSet = nodeDetailsSet;
-          universe.setUniverseDetails(universeDetails);
+          if(taskParams().isReadOnlyCluster) {
+            Set<NodeDetails> universeNodeDetailsSet = universeDetails.nodeDetailsSet;
+            Iterator<NodeDetails> nodeItr = nodeDetailsSet.iterator();
+            Iterator<NodeDetails> univItr = universeNodeDetailsSet.iterator();
+            while(univItr.hasNext()) {
+              NodeDetails temp = univItr.next();
+              log.info("ErrorGovardhan Existing nodes in univ: {}", temp.nodeName);
+            }
+            while(nodeItr.hasNext()) {
+              NodeDetails temp = nodeItr.next();
+              log.info("ErrorGovardhan Adding to existing nodes: {}", temp);
+              universeNodeDetailsSet.add(temp);
+            }
+            universeDetails.nodeDetailsSet = universeNodeDetailsSet;
+          } else {
+            universeDetails.nodeDetailsSet = nodeDetailsSet;
+            universe.setUniverseDetails(universeDetails);
+          }
         };
     saveUniverseDetails(updater);
   }
@@ -396,6 +426,7 @@ public class KubernetesCommandExecutor extends UniverseTaskBase {
   }
 
   private String generateHelmOverride() {
+    log.info("ErrorGovardhan generateHelmOverride taskParams().masterAddresses {}", taskParams().masterAddresses);
     Map<String, Object> overrides = new HashMap<String, Object>();
     Yaml yaml = new Yaml();
 
@@ -432,10 +463,16 @@ public class KubernetesCommandExecutor extends UniverseTaskBase {
     String placementZone = null;
     boolean isMultiAz = (taskParams().masterAddresses != null) ? true : false;
 
-    PlacementInfo pi =
-        isMultiAz
-            ? taskParams().placementInfo
-            : u.getUniverseDetails().getPrimaryCluster().placementInfo;
+    // PlacementInfo pi =
+    //     isMultiAz
+    //         ? taskParams().placementInfo
+    //         : u.getUniverseDetails().getPrimaryCluster().placementInfo;
+    //TODO GOVARDHAN
+    PlacementInfo pi;
+    if(taskParams().isReadOnlyCluster)
+      pi = u.getUniverseDetails().getReadOnlyClusters().get(0).placementInfo;
+    else
+      pi = u.getUniverseDetails().getPrimaryCluster().placementInfo;
     ;
     if (pi != null) {
       if (pi.cloudList.size() != 0) {
@@ -494,7 +531,16 @@ public class KubernetesCommandExecutor extends UniverseTaskBase {
       }
       overrides.put("isMultiAz", true);
 
-      overrides.put(
+      if (taskParams().isReadOnlyCluster) {
+        overrides.put(
+          "replicas",
+          ImmutableMap.of(
+              "tserver",
+              numNodes,
+              "master",
+              0));
+      } else {
+        overrides.put(
           "replicas",
           ImmutableMap.of(
               "tserver",
@@ -503,8 +549,19 @@ public class KubernetesCommandExecutor extends UniverseTaskBase {
               replicationFactorZone,
               "totalMasters",
               replicationFactor));
+      }
     } else {
-      overrides.put("replicas", ImmutableMap.of("tserver", numNodes, "master", replicationFactor));
+      if (taskParams().isReadOnlyCluster) {
+        overrides.put(
+          "replicas",
+          ImmutableMap.of(
+              "tserver",
+              numNodes,
+              "master",
+              0));
+      } else {
+        overrides.put("replicas", ImmutableMap.of("tserver", numNodes, "master", replicationFactor));
+      }
     }
 
     if (!tserverDiskSpecs.isEmpty()) {
@@ -609,7 +666,11 @@ public class KubernetesCommandExecutor extends UniverseTaskBase {
     partition.put("master", taskParams().masterPartition);
     overrides.put("partition", partition);
 
-    UUID placementUuid = u.getUniverseDetails().getPrimaryCluster().uuid;
+    UUID placementUuid;
+    if(taskParams().isReadOnlyCluster)
+      placementUuid = u.getUniverseDetails().getReadOnlyClusters().get(0).uuid;
+    else
+      placementUuid = u.getUniverseDetails().getPrimaryCluster().uuid;
     Map<String, Object> gflagOverrides = new HashMap<>();
     // Go over master flags.
     Map<String, Object> masterOverrides = new HashMap<String, Object>(userIntent.masterGFlags);

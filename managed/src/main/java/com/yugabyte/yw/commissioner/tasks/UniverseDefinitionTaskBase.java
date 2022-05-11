@@ -372,9 +372,11 @@ public abstract class UniverseDefinitionTaskBase extends UniverseTaskBase {
 
     for (Cluster cluster : taskParams().clusters) {
       Set<NodeDetails> nodesInCluster = taskParams().getNodesInCluster(cluster.uuid);
+      log.info("ErrorGovardhan nodes in cluster size {}", nodesInCluster.size());
       int startIndex =
           PlacementInfoUtil.getStartIndex(
               universe.getUniverseDetails().getNodesInCluster(cluster.uuid));
+      log.info("ErrorGovardhan startIndex: {}", startIndex);
       int iter = 0;
       boolean isYSQL = universe.getUniverseDetails().getPrimaryCluster().userIntent.enableYSQL;
       boolean isYCQL = universe.getUniverseDetails().getPrimaryCluster().userIntent.enableYCQL;

@@ -21,6 +21,8 @@ public enum TaskType {
 
   ReadOnlyClusterDelete("ReadOnlyClusterDelete"),
 
+  ReadOnlyKubernetesClusterDelete("ReadOnlyKubernetesClusterDelete"),
+
   CreateKubernetesUniverse("CreateKubernetesUniverse"),
 
   ReadOnlyKubernetesClusterCreate("ReadOnlyKubernetesClusterCreate"),
