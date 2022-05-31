@@ -405,11 +405,14 @@ class TransactionParticipant::Impl
 
         // If transaction op_id is greater than the CDCSDK checkpoint op_id.
         // don't clean the intent as well as intent after this.
+        // time 
         if (op_id > checkpoint_op_id) {
           break;
         }
+
         VLOG_WITH_PREFIX(2) << "Cleaning tx opid is: " << op_id.ToString()
                             << " checkpoint opid is: " << checkpoint_op_id.ToString();
+        LOG(INFO) << "Adithya: Deleting Transaction: " << front.transaction_id << ", op_id: " << op_id;
         (**it).ScheduleRemoveIntents(*it);
         RemoveTransaction(it, front.reason, min_running_notifier);
       }
@@ -1102,7 +1105,8 @@ class TransactionParticipant::Impl
       .time = now,
       .reason = reason,
     });
-    ProcessRemoveQueueUnlocked(min_running_notifier);
+  LOG(INFO) << "Adithya: LatestCheckpoint" << GetLatestCheckPoint();
+     ProcessRemoveQueueUnlocked(min_running_notifier);
   }
 
   void ProcessRemoveQueueUnlocked(MinRunningNotifier* min_running_notifier) REQUIRES(mutex_) {
@@ -1192,6 +1196,7 @@ class TransactionParticipant::Impl
     // Since we try to remove the transaction after all its records are removed from the provisional
     // DB, it is safe to complete removal at this point, because it means that there will be no more
     // queries to status of this transactions.
+    LOG(INFO) << "Adithya: ST: " << yb::GetStackTrace();
     immediate_cleanup_queue_.push_back(ImmediateCleanupQueueEntry{
       .request_id = request_serial_,
       .transaction_id = (**it).id(),

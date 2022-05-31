@@ -358,6 +358,9 @@ message TransactionMetadataPB {
   // Stores whether the transaction is local or global; treated as global if not present
   // for backwards compatability.
   optional TransactionLocality locality = 7;
+
+  optional int64 op_id_term = 8;
+  optional int64 op_id_index = 9;
 }
 
 // See ReadHybridTime for explation of this message.

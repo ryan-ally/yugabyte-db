@@ -111,6 +111,9 @@ Status BootstrapTablet(
   // Set WAL retention time from the metadata.
   (*rebuilt_log)->set_wal_retention_secs(meta.wal_retention_secs());
   (*rebuilt_log)->set_cdc_min_replicated_index(meta.cdc_min_replicated_index());
+  LOG(INFO) << "Adithya: BootstrapTablet" << meta.cdc_min_replicated_index();
+  LOG(INFO) << "Adithya: GetLatestEntryOpId" << (*rebuilt_log)->GetLatestEntryOpId();
+  
 
   // This is necessary since OpenNewLog() initially disables sync.
   RETURN_NOT_OK((*rebuilt_log)->ReEnableSyncIfRequired());

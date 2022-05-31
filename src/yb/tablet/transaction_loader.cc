@@ -226,6 +226,8 @@ class TransactionLoader::Executor {
       LOG_WITH_PREFIX(DFATAL) << "Loaded bad metadata: " << metadata.status();
       return;
     }
+    LOG(INFO) << "Adithya: Loaded Transaction with id: " << metadata->transaction_id << ", opId: " << metadata->op_id;
+    LOG(INFO) << "Adithya: Loading Metadata: " << metadata_pb.op_id_term() << "." << metadata_pb.op_id_index();
 
     if (!metadata->start_time.is_valid()) {
       metadata->start_time = HybridTime::kMin;

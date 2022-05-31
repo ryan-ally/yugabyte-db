@@ -314,9 +314,11 @@ Status TabletPeer::InitTabletPeer(
   RETURN_NOT_OK(set_cdc_min_replicated_index(meta_->cdc_min_replicated_index()));
   if (tablet_->transaction_participant()) {
     tablet_->transaction_participant()->SetRetainOpId(meta_->cdc_sdk_min_checkpoint_op_id());
+    LOG(INFO) << "Adithya: transaction_participant.GetRetainOpId: " << tablet_->transaction_participant()->GetRetainOpId();
+    TRACE("TabletPeer::Init() finished");
+    LOG(INFO) << "TabletPeer::Init(): " << meta_->cdc_sdk_min_checkpoint_op_id();
   }
-
-  TRACE("TabletPeer::Init() finished");
+  
   VLOG_WITH_PREFIX(2) << "Peer Initted";
 
   return Status::OK();

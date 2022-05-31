@@ -38,6 +38,7 @@
 
 #include "yb/util/enums.h"
 #include "yb/util/math_util.h"
+#include "yb/util/opid.h"
 #include "yb/util/status_fwd.h"
 #include "yb/util/strongly_typed_uuid.h"
 #include "yb/util/uint_set.h"
@@ -283,6 +284,7 @@ struct TransactionMetadata {
   TransactionId transaction_id = TransactionId::Nil();
   IsolationLevel isolation = IsolationLevel::NON_TRANSACTIONAL;
   TabletId status_tablet;
+  OpId op_id;
 
   // By default, a random value is picked for a newly created transaction.
   uint64_t priority = 0;

@@ -61,6 +61,10 @@ Result<TransactionMetadata> TransactionMetadata::FromPB(const TransactionMetadat
     result.locality = TransactionLocality::GLOBAL;
   }
 
+  if (source.has_op_id_index() && source.has_op_id_term()) {
+    result.op_id = OpId(source.op_id_term(), source.op_id_index());
+  }
+
   return result;
 }
 
@@ -74,6 +78,8 @@ void TransactionMetadata::ToPB(TransactionMetadataPB* dest) const {
 
 void TransactionMetadata::TransactionIdToPB(TransactionMetadataPB* dest) const {
   dest->set_transaction_id(transaction_id.data(), transaction_id.size());
+  dest->set_op_id_term(op_id.term);
+  dest->set_op_id_index(op_id.index); 
 }
 
 void TransactionMetadata::ForceToPB(TransactionMetadataPB* dest) const {
@@ -83,6 +89,8 @@ void TransactionMetadata::ForceToPB(TransactionMetadataPB* dest) const {
   dest->set_priority(priority);
   dest->set_start_hybrid_time(start_time.ToUint64());
   dest->set_locality(locality);
+  dest->set_op_id_term(op_id.term);
+  dest->set_op_id_index(op_id.index);
 }
 
 bool operator==(const TransactionMetadata& lhs, const TransactionMetadata& rhs) {
