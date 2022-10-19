@@ -27,7 +27,7 @@ azure-mgmt-privatedns==0.1.0
 azure-mgmt-network==10.2.0
 azure-mgmt-resource==10.0.0
 boto==2.42.0
-boto3==1.4.0
+boto3==1.4.5
 botocore==1.4.59
 cryptography==1.7.2
 distro==1.5.0
@@ -39,7 +39,7 @@ google-auth==1.19.2
 ipaddr==2.1.11
 mitogen==0.2.9
 oauth2client<4.0.0  # GCP SDK seems to require version <4 of oauth2client: https://goo.gl/7uC34W
-paramiko==2.4.2
+paramiko==2.10.1
 pycryptodome==3.6.1
 python-dateutil==2.5.3
 PyYAML==5.1
